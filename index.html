@@ -1,166 +1,481 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZetGram — Красный Чат</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ZetGram — Chat</title>
+
+<!-- Стили -->
 <style>
-    /* Общий стиль */
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background-color: #1a0000; /* тёмно-красный фон */
-        color: white;
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-    }
+:root{
+  --bg:#1a0000; --panel:#2a0f0f; --accent:#b30000; --accent-2:#ff4c4c; --muted:#ff9999;
+  --glass: rgba(255,255,255,0.03);
+  --nice: #ffefef;
+}
+*{box-sizing:border-box}
+html,body{height:100%; margin:0; font-family: Inter,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--nice); -webkit-font-smoothing:antialiased}
+.app{
+  height:100vh; display:flex; flex-direction:column;
+}
+/* header */
+.header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; background:linear-gradient(90deg,var(--accent),#7e0000);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+}
+.header .title{font-weight:700; font-size:18px}
+.header .user-info{display:flex; gap:10px; align-items:center}
 
-    /* Заголовок */
-    header {
-        background: linear-gradient(to right, #800000, #b30000);
-        padding: 15px;
-        text-align: center;
-        font-size: 22px;
-        font-weight: bold;
-        color: #fff;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
+/* layout */
+.container{
+  flex:1; display:flex; gap:12px; padding:12px;
+}
+/* sidebar users */
+.sidebar{
+  width:220px; max-width:30%;
+  background:var(--panel); border-radius:12px; padding:12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  display:flex; flex-direction:column;
+}
+.sidebar h3{margin:0 0 10px 0; color:var(--accent-2)}
+.users-list{overflow:auto; flex:1; display:flex; flex-direction:column; gap:8px; padding-right:6px}
+.user-row{display:flex; gap:8px; align-items:center; padding:8px; border-radius:8px; cursor:default}
+.user-row .avatar{width:40px;height:40px;border-radius:8px; display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+.user-row .meta{display:flex;flex-direction:column}
+.user-row .meta .name{font-weight:600}
+.user-row .status{font-size:12px; color:var(--muted)}
 
-    /* Контейнер чата */
-    #chat-box {
-        flex: 1;
-        overflow-y: auto;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        scroll-behavior: smooth;
-    }
+/* main chat panel */
+.panel{
+  flex:1; display:flex; flex-direction:column; border-radius:12px; background: linear-gradient(180deg,#240606,#2a0f0f);
+  padding:10px; box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  min-width:320px;
+}
 
-    /* Сообщение */
-    .message {
-        padding: 10px;
-        border-radius: 10px;
-        max-width: 70%;
-        word-wrap: break-word;
-        animation: fadeIn 0.3s ease;
-    }
+/* message area */
+.messages{
+  flex:1; overflow:auto; padding:12px; display:flex; flex-direction:column; gap:10px;
+  scroll-behavior:smooth;
+}
+.message{
+  max-width:72%; padding:10px 12px; border-radius:12px; position:relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  word-break:break-word; background: #4a0a0a;
+}
+.message.mine{align-self:flex-end; background: linear-gradient(180deg,var(--accent),#8b0000)}
+.message .meta{display:flex; gap:8px; align-items:center; margin-bottom:6px}
+.avatar-sm{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;color:white}
+.author{font-weight:700; color:var(--accent-2)}
+.time{font-size:12px;color:var(--muted); margin-left:6px}
+.msg-text{font-size:15px; margin-bottom:6px}
+.msg-img{display:block; max-width:320px; border-radius:8px; margin-top:6px; box-shadow: 0 6px 16px rgba(0,0,0,0.5)}
 
-    .my-message {
-        align-self: flex-end;
-        background-color: #b30000;
-    }
+/* delete button */
+.del-btn{position:absolute; top:6px; right:6px; background:transparent; border:none; color:var(--muted); font-weight:700; cursor:pointer}
 
-    .other-message {
-        align-self: flex-start;
-        background-color: #660000;
-    }
+/* input area fixed bottom inside panel */
+.input-bar{
+  display:flex; gap:8px; align-items:center; margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,0,0,0.06)
+}
+.input-field{
+  flex:1; display:flex; gap:8px; align-items:center; background:var(--glass); padding:8px; border-radius:10px;
+}
+textarea{flex:1; resize:none; padding:8px; border-radius:8px; background:transparent; border:none; color:var(--nice); outline:none; font-size:15px}
+.file-btn{background:transparent; border:2px dashed rgba(255,255,255,0.06); padding:6px;border-radius:8px; color:var(--muted); cursor:pointer}
+.send-btn{background:linear-gradient(90deg,var(--accent),#ff3b3b); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700}
 
-    /* Поле ввода */
-    #input-area {
-        display: flex;
-        background-color: #330000;
-        padding: 10px;
-        border-top: 2px solid #800000;
-        position: sticky;
-        bottom: 0;
-    }
+/* top-right ad (small) */
+.ad {
+  position: fixed; top:10px; right:10px; z-index:9999;
+  width:180px; max-width:40vw; padding:6px; background:rgba(0,0,0,0.5); border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.6);
+  font-size:13px; color:#ffdede;
+}
+.ad iframe{width:100%; height:60px; border:0; display:block}
+.ad .close{position:absolute; top:6px; right:6px; background:rgba(255,255,255,0.08); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:#ffbbbb}
 
-    #message-input {
-        flex: 1;
-        padding: 10px;
-        border: none;
-        border-radius: 5px;
-        outline: none;
-        font-size: 16px;
-    }
-
-    #send-btn {
-        background-color: #b30000;
-        color: white;
-        border: none;
-        padding: 10px 15px;
-        margin-left: 5px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: 0.3s;
-    }
-
-    #send-btn:hover {
-        background-color: #ff1a1a;
-    }
-
-    /* Реклама */
-    #ad {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: rgba(179, 0, 0, 0.8);
-        padding: 10px;
-        border-radius: 8px;
-        color: white;
-        font-size: 14px;
-        max-width: 200px;
-        box-shadow: 0 0 10px rgba(255,0,0,0.5);
-        z-index: 9999;
-    }
-
-    /* Анимация появления */
-    @keyframes fadeIn {
-        from {opacity: 0; transform: translateY(5px);}
-        to {opacity: 1; transform: translateY(0);}
-    }
+/* responsive */
+@media(max-width:880px){
+  .container{padding:8px}
+  .sidebar{display:none}
+  .panel{min-width:0}
+  .ad{right:8px; top:8px; width:150px}
+}
 </style>
 </head>
 <body>
+<div class="app" role="application" aria-label="ZetGram chat">
+  <div class="header" role="banner">
+    <div class="title">ZetGram 🔴</div>
+    <div class="user-info" id="headerUser">
+      <!-- logged user -->
+    </div>
+  </div>
 
-<header>ZetGram 🔴</header>
+  <div class="container">
+    <div class="sidebar" aria-label="Список пользователей">
+      <h3>Пользователи</h3>
+      <div class="users-list" id="usersList"></div>
+      <div style="margin-top:8px; text-align:center; color:var(--muted); font-size:13px">Онлайн/в сети</div>
+    </div>
 
-<div id="chat-box">
-    <div class="other-message message">Добро пожаловать в ZetGram!</div>
+    <div class="panel" role="main">
+      <div class="messages" id="messages" aria-live="polite"></div>
+
+      <div class="input-bar" role="region" aria-label="Отправка сообщения">
+        <div class="input-field">
+          <textarea id="textInput" placeholder="Напишите сообщение (Enter — отправить, Shift+Enter — новая строка)"></textarea>
+          <input id="fileInput" class="file-btn" type="file" accept="image/*" title="Прикрепить изображение" />
+        </div>
+        <button class="send-btn" id="sendBtn" aria-label="Отправить">Отправить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ad" id="adBanner" aria-hidden="false">
+    <div class="close" id="closeAd">✕</div>
+    <!-- AADS iframe -->
+    <iframe data-aa="2406373" src="//acceptable.a-ads.com/2406373/?size=Adaptive" referrerpolicy="no-referrer"></iframe>
+  </div>
 </div>
 
-<div id="input-area">
-    <input type="text" id="message-input" placeholder="Напишите сообщение...">
-    <button id="send-btn">➤</button>
-</div>
+<!-- Firebase SDK (modular) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut,
+    updateProfile
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getDatabase,
+    ref,
+    push,
+    onChildAdded,
+    onChildRemoved,
+    query,
+    orderByChild,
+    set,
+    serverTimestamp,
+    onValue,
+    get,
+    remove,
+    onDisconnect
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  import {
+    getStorage,
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-storage.js";
 
-<div id="ad">💡 Реклама: ZetGram — лучший чат!</div>
+  // ---------- CONFIG ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTZrRKHrmKnA9ycBWvt9ephnr7TN6ZFs8",
+    authDomain: "zetgram-d2b77.firebaseapp.com",
+    databaseURL: "https://zetgram-d2b77-default-rtdb.firebaseio.com",
+    projectId: "zetgram-d2b77",
+    storageBucket: "zetgram-d2b77.appspot.com",
+    messagingSenderId: "804686454",
+    appId: "1:804686454:web:db9f618955e3d370deed57",
+    measurementId: "G-KCYSRCX4ZL"
+  };
 
-<script>
-    const chatBox = document.getElementById('chat-box');
-    const messageInput = document.getElementById('message-input');
-    const sendBtn = document.getElementById('send-btn');
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+  const storage = getStorage(app);
 
-    // Функция отправки сообщения
-    function sendMessage() {
-        const text = messageInput.value.trim();
-        if (text === '') return;
-        
-        const message = document.createElement('div');
-        message.classList.add('message', 'my-message');
-        message.textContent = text;
-        chatBox.appendChild(message);
+  // ---------- UI references ----------
+  const messagesEl = document.getElementById('messages');
+  const textInput = document.getElementById('textInput');
+  const fileInput = document.getElementById('fileInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const usersListEl = document.getElementById('usersList');
+  const headerUser = document.getElementById('headerUser');
+  const adBanner = document.getElementById('adBanner');
+  const closeAd = document.getElementById('closeAd');
 
-        messageInput.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
+  closeAd.addEventListener('click', ()=> adBanner.style.display='none');
 
-        setTimeout(() => {
-            const reply = document.createElement('div');
-            reply.classList.add('message', 'other-message');
-            reply.textContent = 'Ответ: ' + text;
-            chatBox.appendChild(reply);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }, 1000);
+  // --------- small helpers ----------
+  function el(tag, cls, txt){
+    const e = document.createElement(tag);
+    if(cls) e.className = cls;
+    if(txt !== undefined) e.textContent = txt;
+    return e;
+  }
+  function timeString(ts){
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  }
+  function initials(name){
+    if(!name) return '??';
+    return name.split(' ').map(s=>s[0]?.toUpperCase()||'').slice(0,2).join('');
+  }
+  function colorFromString(s){
+    let h=0; for(let i=0;i<s.length;i++) h = (h<<5)-h + s.charCodeAt(i);
+    const hue = Math.abs(h)%360;
+    return `hsl(${hue} 80% 35%)`;
+  }
+
+  // ---------- Presence & users ----------
+  const displayedUsers = new Map(); // uid->node
+  function renderUser(uid, data){
+    let row = displayedUsers.get(uid);
+    if(!row){
+      row = el('div','user-row');
+      const av = el('div','avatar');
+      av.style.width = '40px'; av.style.height='40px'; av.style.borderRadius='8px'; av.style.display='flex'; av.style.alignItems='center'; av.style.justifyContent='center';
+      av.style.fontWeight='700';
+      av.style.color='#fff';
+      av.style.background = colorFromString(data.username||uid);
+      av.textContent = initials(data.username||'U');
+      const meta = el('div','meta');
+      const name = el('div','name', data.username||'Без имени');
+      const status = el('div','status', data.online ? 'онлайн' : `последний: ${data.lastSeen ? new Date(data.lastSeen).toLocaleString() : '—'}`);
+      status.style.color='var(--muted)';
+      meta.appendChild(name); meta.appendChild(status);
+      row.appendChild(av); row.appendChild(meta);
+      usersListEl.appendChild(row);
+      displayedUsers.set(uid,row);
+    } else {
+      // update status
+      const name = row.querySelector('.meta .name');
+      const status = row.querySelector('.meta .status');
+      if(name) name.textContent = data.username||'Без имени';
+      if(status) status.textContent = data.online ? 'онлайн' : `последний: ${data.lastSeen ? new Date(data.lastSeen).toLocaleString() : '—'}`;
+    }
+  }
+
+  // listen users list
+  const usersRef = ref(db, 'users');
+  onValue(usersRef, snapshot=>{
+    const v = snapshot.val() || {};
+    // remove DOM nodes not in v
+    const uids = Object.keys(v);
+    // render each
+    uids.forEach(uid => {
+      renderUser(uid, v[uid]);
+    });
+    // remove old
+    for(const [uid,node] of displayedUsers){
+      if(!v[uid]) { node.remove(); displayedUsers.delete(uid); }
+    }
+  });
+
+  // ---------- messages ----------
+  const displayedMessages = new Set();
+  function scrollToBottom(){
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // render one message
+  function renderMessage(key, msg){
+    if(displayedMessages.has(key)) return;
+    displayedMessages.add(key);
+
+    const isMine = auth.currentUser && msg.uid === auth.currentUser.uid;
+    const wrapper = el('div','message ' + (isMine ? 'mine':'other'));
+    wrapper.id = 'm-'+key;
+
+    // meta (avatar + author + time)
+    const meta = el('div','meta');
+    const av = el('div','avatar-sm');
+    av.style.background = colorFromString(msg.author || msg.username || msg.uid);
+    av.textContent = initials(msg.author || msg.username || msg.uid);
+    const author = el('div','author', msg.author || msg.username || 'Без имени');
+    const tm = el('div','time', timeString(msg.timestamp||Date.now()));
+    meta.appendChild(av);
+    meta.appendChild(author);
+    meta.appendChild(tm);
+
+    const textNode = el('div','msg-text', msg.text || '');
+
+    wrapper.appendChild(meta);
+    if(msg.text) wrapper.appendChild(textNode);
+
+    // image (if present)
+    if(msg.imageUrl){
+      const img = document.createElement('img');
+      img.src = msg.imageUrl;
+      img.className = 'msg-img';
+      img.alt = 'Изображение';
+      wrapper.appendChild(img);
+      img.addEventListener('load', scrollToBottom);
     }
 
-    sendBtn.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
-    });
-</script>
+    // delete button for own
+    if(isMine){
+      const del = el('button','del-btn','×');
+      del.title = 'Удалить сообщение';
+      del.addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        if(!confirm('Удалить сообщение?')) return;
+        try{
+          await remove(ref(db, 'messages/' + key));
+        }catch(e){ alert('Ошибка удаления: '+e.message) }
+      });
+      wrapper.appendChild(del);
+    }
 
+    messagesEl.appendChild(wrapper);
+    scrollToBottom();
+  }
+
+  // subscribe to messages
+  const messagesRef = ref(db, 'messages');
+  const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+  onChildAdded(messagesQuery, (snap)=>{
+    renderMessage(snap.key, snap.val());
+  });
+  // remove handler: when message removed, delete from DOM and set
+  onChildRemoved(messagesRef, (snap)=>{
+    const id = 'm-' + snap.key;
+    const elrem = document.getElementById(id);
+    if(elrem) elrem.remove();
+    displayedMessages.delete(snap.key);
+  });
+
+
+  // send message (text + optional image url)
+  async function sendMessage(text, imageUrl=null){
+    if(!auth.currentUser) { alert('Сначала войдите'); return; }
+    const msg = {
+      uid: auth.currentUser.uid,
+      author: auth.currentUser.displayName || (auth.currentUser.email && auth.currentUser.email.split('@')[0]) || 'Без имени',
+      text: text || '',
+      imageUrl: imageUrl || null,
+      timestamp: Date.now()
+    };
+    await push(ref(db, 'messages'), msg);
+  }
+
+  // Upload image to storage and return url
+  async function uploadImage(file){
+    const id = Date.now() + '_' + Math.random().toString(36).slice(2,9);
+    const sRef = storageRef(storage, 'chat_images/' + id + '_' + file.name);
+    const blob = file;
+    await uploadBytes(sRef, blob);
+    return await getDownloadURL(sRef);
+  }
+
+  // ---------- UI events ----------
+  sendBtn.addEventListener('click', async ()=>{
+    const txt = textInput.value.trim();
+    if(!txt && !fileInput.files.length) return;
+    sendBtn.disabled = true;
+    try{
+      if(fileInput.files.length){
+        const url = await uploadImage(fileInput.files[0]);
+        await sendMessage(txt, url);
+      } else {
+        await sendMessage(txt, null);
+      }
+      textInput.value = '';
+      fileInput.value = '';
+    }catch(e){
+      alert('Ошибка отправки: '+e.message);
+    } finally { sendBtn.disabled = false; }
+  });
+
+  // enter key to send
+  textInput.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendBtn.click();
+    }
+  });
+
+  // ---------- Auth UI (simple popup prompt) ----------
+  // We ask user to sign in with email/password or register with nickname
+  // For simplicity: prompt flows (could be replaced with full forms)
+  async function authFlow(){
+    // if already logged in, skip
+    if(auth.currentUser) return;
+
+    // present minimal UI: check stored email in localStorage?
+    const savedEmail = localStorage.getItem('zetgram_email') || '';
+    const use = confirm('Войти в ZetGram? (OK — войти, Отмена — регистрация)');
+    if(use){
+      const email = prompt('Email', savedEmail) || '';
+      const pass = prompt('Пароль') || '';
+      try{
+        await signInWithEmailAndPassword(auth, email, pass);
+        localStorage.setItem('zetgram_email', email);
+        return;
+      }catch(e){
+        alert('Ошибка входа: ' + e.message);
+        // fallback to register
+      }
+    }
+    // register
+    const nickname = prompt('Выберите ник (будет отображаться в чате)') || '';
+    if(!nickname){ alert('Ник обязателен'); return authFlow(); }
+    const emailR = prompt('Email (для входа)') || '';
+    const passR = prompt('Пароль') || '';
+    try{
+      const cred = await createUserWithEmailAndPassword(auth, emailR, passR);
+      // set displayName
+      await updateProfile(cred.user, { displayName: nickname });
+      // write user node
+      await set(ref(db, 'users/' + cred.user.uid), { username: nickname, online:true, lastSeen: Date.now() });
+      localStorage.setItem('zetgram_email', emailR);
+    }catch(e){
+      alert('Ошибка регистрации: ' + e.message);
+      return authFlow();
+    }
+  }
+
+  // presence: set online, and onDisconnect set lastSeen
+  onAuthStateChanged(auth, async (u)=>{
+    if(u){
+      // update header
+      headerUser.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
+        <div style="width:36px;height:36px;border-radius:8px;background:${colorFromString(u.displayName||u.email)};display:flex;align-items:center;justify-content:center;font-weight:700">${initials(u.displayName||u.email)}</div>
+        <div style="display:flex;flex-direction:column;text-align:right"><div style="font-weight:700">${u.displayName||u.email.split('@')[0]}</div><div style="font-size:12px;color:var(--muted)">Вы онлайн</div></div>
+      </div>`;
+
+      // set presence in DB
+      const userRef = ref(db, 'users/' + u.uid);
+      await set(userRef, { username: u.displayName || (u.email && u.email.split('@')[0]) || 'Без имени', online: true, lastSeen: Date.now() });
+      // ensure onDisconnect sets offline
+      onDisconnect(userRef).set({ username: u.displayName || (u.email && u.email.split('@')[0]) || 'Без имени', online:false, lastSeen: Date.now() });
+
+    } else {
+      headerUser.innerHTML = `<div style="color:var(--muted)">Не в сети</div>`;
+    }
+  });
+
+  // if not logged in, start flow
+  // do it on load
+  window.addEventListener('load', async ()=>{
+    // small delay to let firebase init
+    setTimeout(async ()=>{
+      if(!auth.currentUser) {
+        await authFlow();
+      }
+    }, 200);
+  });
+
+  // ---------- simple sign-out via header click (double-click) ----------
+  headerUser.addEventListener('dblclick', async ()=>{
+    if(confirm('Выйти из ZetGram?')){
+      if(auth.currentUser){
+        // set offline
+        await set(ref(db, 'users/' + auth.currentUser.uid), { username: auth.currentUser.displayName || (auth.currentUser.email && auth.currentUser.email.split('@')[0]), online:false, lastSeen: Date.now() });
+      }
+      await signOut(auth);
+      location.reload();
+    }
+  });
+
+</script>
 </body>
+<div id="frame" style="width: 100%;margin: auto;background: rgba(0, 0, 0, 0.50);position: relative; z-index: 99998;">
+          <iframe data-aa='2406373' src='//acceptable.a-ads.com/2406373/?size=Adaptive&background_color=ddd&title_color=b27&title_hover_color=fffefe'
+                            style='border:0; padding:0; width:70%; height:auto; overflow:hidden;display: block;margin: auto'></iframe>
+        </div>
 </html>
