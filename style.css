@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+body {
+  margin: 0; padding: 0;
+  font-family: 'Montserrat', sans-serif;
+  background: #1a0b0b;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  background: #b30000;
+  padding: 15px 30px;
+  font-weight: 600;
+  font-size: 1.6rem;
+  box-shadow: 0 3px 8px rgba(255, 0, 0, 0.5);
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+button {
+  cursor: pointer;
+  background: #b30000;
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background: #e60000;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 15px;
+  overflow: hidden;
+}
+
+.auth-container {
+  max-width: 380px;
+  margin: auto;
+  background: #2a0f0f;
+  border-radius: 10px;
+  padding: 25px 30px;
+  box-shadow: 0 0 10px #b30000aa;
+  user-select: none;
+}
+
+.auth-title {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #ff4c4c;
+  font-weight: 700;
+  user-select: none;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 5px;
+  margin: 6px 0 14px 0;
+  background: #330000;
+  color: #fff;
+  outline: none;
+  box-sizing: border-box;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  background: #4d0000;
+}
+
+.auth-switch {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #ff9999;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-switch:hover {
+  color: #ff4c4c;
+}
+
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #2a0f0f;
+  border-radius: 10px;
+  padding: 15px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.message {
+  padding: 8px 14px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  max-width: 75%;
+  position: relative;
+  word-wrap: break-word;
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.message.mine {
+  background: #b30000;
+  align-self: flex-end;
+  border-bottom-right-radius: 3px;
+}
+
+.message.other {
+  background: #550000;
+  align-self: flex-start;
+  border-bottom-left-radius: 3px;
+}
+
+.message .author {
+  font-weight: 600;
+  margin-bottom: 3px;
+  color: #ff6666;
+  user-select: none;
+}
+
+.message .text {
+  font-size: 1rem;
+}
+
+.message .timestamp {
+  font-size: 0.7rem;
+  color: #ff9999aa;
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  user-select: none;
+}
+
+.message .delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: transparent;
+  border: none;
+  color: #ff6666;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  user-select: none;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.message .delete-btn:hover {
+  opacity: 1;
+}
+
+textarea {
+  flex: 1;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 1rem;
+  resize: none;
+  background: #330000;
+  color: white;
+  border: none;
+  outline: none;
+}
+
+form {
+  display: flex;
+  margin-top: 12px;
+}
+
+.footer {
+  text-align: center;
+  padding: 6px;
+  font-size: 0.8rem;
+  color: #440000;
+  user-select: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
