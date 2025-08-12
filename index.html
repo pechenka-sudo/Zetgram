@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Zetgram Red</title>
+<title>Zetgram Red с никами</title>
 <style>
-  /* Reset */
+  /* Стили остались те же, как в предыдущем примере */
   * {
     box-sizing: border-box;
   }
@@ -43,7 +43,7 @@
     text-align: center;
     text-shadow: 0 0 6px #ff2f2f;
   }
-  input[type="email"], input[type="password"], #messageInput {
+  input[type="email"], input[type="password"], input[type="text"], #messageInput {
     padding: 14px 18px;
     margin-bottom: 18px;
     border: none;
@@ -55,12 +55,10 @@
     outline: none;
     transition: box-shadow 0.3s ease;
   }
-  input[type="email"]::placeholder,
-  input[type="password"]::placeholder,
-  #messageInput::placeholder {
+  input::placeholder {
     color: #ff9999;
   }
-  input[type="email"]:focus, input[type="password"]:focus, #messageInput:focus {
+  input:focus, #messageInput:focus {
     box-shadow: 0 0 12px #ff4949;
     background: #440a0a;
   }
@@ -194,45 +192,7 @@
   #btnSend:hover {
     background: #cc1f1f;
   }
-</style>
-</head>
-<body>
-
-<div id="app">
-
-  <!-- Login & Sign Up -->
-  <div id="login" class="active">
-    <h2>Zetgram</h2>
-    <input type="email" id="email" placeholder="Email" autocomplete="username" />
-    <input type="password" id="password" placeholder="Пароль" autocomplete="current-password" />
-    <button id="btnLogin">Войти</button>
-    <button id="btnSignUp">Регистрация</button>
-    <div id="loginError"></div>
-  </div>
-
-  <!-- Chat -->
-  <div id="chat">
-    <header>
-      <h2>Zetgram</h2>
-      <button id="btnLogout" title="Выйти">⏻</button>
-    </header>
-    <div id="messages"></div>
-    <form id="sendForm">
-      <input type="text" id="messageInput" placeholder="Напишите сообщение..." autocomplete="off" />
-      <button type="submit" id="btnSend">➤</button>
-    </form>
-  </div>
-
-</div>
-
-<!-- Реклама справа снизу -->
-<div id="adBanner">
-  <input autocomplete="off" type="checkbox" id="closeAd" hidden />
-  <label for="closeAd">&times;</label>
-  <iframe data-aa="2406373" src="//acceptable.a-ads.com/2406373/?size=Adaptive" frameborder="0"></iframe>
-</div>
-
-<style>
+  /* Реклама */
   #adBanner {
     position: fixed;
     bottom: 15px;
@@ -268,14 +228,49 @@
     display: none;
   }
 </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Login & Sign Up -->
+  <div id="login" class="active">
+    <h2>Zetgram</h2>
+    <input type="text" id="username" placeholder="Ваш ник (для регистрации)" autocomplete="username" />
+    <input type="email" id="email" placeholder="Email" autocomplete="username" />
+    <input type="password" id="password" placeholder="Пароль" autocomplete="current-password" />
+    <button id="btnLogin">Войти</button>
+    <button id="btnSignUp">Регистрация</button>
+    <div id="loginError"></div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat">
+    <header>
+      <h2>Zetgram</h2>
+      <button id="btnLogout" title="Выйти">⏻</button>
+    </header>
+    <div id="messages"></div>
+    <form id="sendForm">
+      <input type="text" id="messageInput" placeholder="Напишите сообщение..." autocomplete="off" />
+      <button type="submit" id="btnSend">➤</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- Реклама справа снизу -->
+<div id="adBanner">
+  <input autocomplete="off" type="checkbox" id="closeAd" hidden />
+  <label for="closeAd">&times;</label>
+  <iframe data-aa="2406373" src="//acceptable.a-ads.com/2406373/?size=Adaptive" frameborder="0"></iframe>
+</div>
 
 <script type="module">
-  // Firebase imports (ES Modules)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  import { getDatabase, ref, set, get, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyDTZrRKHrmKnA9ycBWvt9ephnr7TN6ZFs8",
     authDomain: "zetgram-d2b77.firebaseapp.com",
@@ -286,14 +281,13 @@
     measurementId: "G-KCYSRCX4ZL"
   };
 
-  // Init Firebase
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const database = getDatabase(app);
 
-  // Elements
   const loginDiv = document.getElementById('login');
   const chatDiv = document.getElementById('chat');
+  const usernameInput = document.getElementById('username');
   const emailInput = document.getElementById('email');
   const passwordInput = document.getElementById('password');
   const btnLogin = document.getElementById('btnLogin');
@@ -305,11 +299,13 @@
   const btnLogout = document.getElementById('btnLogout');
 
   let currentUser = null;
+  let currentUsername = null;
 
   function showLogin() {
     loginDiv.classList.add('active');
     chatDiv.classList.remove('active');
     loginError.textContent = '';
+    usernameInput.value = '';
     emailInput.value = '';
     passwordInput.value = '';
   }
@@ -321,39 +317,60 @@
     messageInput.focus();
   }
 
-  // Listen auth state changes
-  onAuthStateChanged(auth, (user) => {
+  // Загрузка ника из базы по UID
+  async function loadUsername(uid) {
+    const userRef = ref(database, 'users/' + uid + '/username');
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      return snapshot.val();
+    }
+    return null;
+  }
+
+  // Слушаем изменение авторизации
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
+      currentUsername = await loadUsername(user.uid);
+      if (!currentUsername) currentUsername = user.email.split('@')[0];
       showChat();
       loadMessages();
     } else {
       currentUser = null;
+      currentUsername = null;
       showLogin();
     }
   });
 
-  // Sign up
-  btnSignUp.addEventListener('click', () => {
+  btnSignUp.addEventListener('click', async () => {
+    loginError.textContent = '';
+    const username = usernameInput.value.trim();
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    loginError.textContent = '';
 
+    if (!username) {
+      loginError.textContent = 'Введите ник';
+      return;
+    }
     if (!email || !password) {
       loginError.textContent = 'Введите email и пароль';
       return;
     }
-    createUserWithEmailAndPassword(auth, email, password)
-      .catch((error) => {
-        loginError.textContent = error.message;
-      });
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      await set(ref(database, 'users/' + uid), { username });
+      // После успешной регистрации подгрузим ник
+      currentUsername = username;
+    } catch (error) {
+      loginError.textContent = error.message;
+    }
   });
 
-  // Login
   btnLogin.addEventListener('click', () => {
+    loginError.textContent = '';
     const email = emailInput.value.trim();
     const password = passwordInput.value;
-    loginError.textContent = '';
 
     if (!email || !password) {
       loginError.textContent = 'Введите email и пароль';
@@ -365,12 +382,10 @@
       });
   });
 
-  // Logout
   btnLogout.addEventListener('click', () => {
     signOut(auth);
   });
 
-  // Load messages from realtime DB and listen for new ones
   function loadMessages() {
     const messagesRef = ref(database, 'messages');
     onChildAdded(messagesRef, (snapshot) => {
@@ -379,7 +394,6 @@
     });
   }
 
-  // Display message in chat
   function displayMessage(msg) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
@@ -387,20 +401,21 @@
       msgDiv.classList.add('self');
     }
     const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    msgDiv.textContent = `[${time}] ${msg.email.split('@')[0]}: ${msg.text}`;
+    const displayName = msg.username || msg.email.split('@')[0] || 'Anon';
+    msgDiv.textContent = `[${time}] ${displayName}: ${msg.text}`;
     messagesDiv.appendChild(msgDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
-  // Send message
-  sendForm.addEventListener('submit', (e) => {
+  sendForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = messageInput.value.trim();
     if (!text) return;
 
     const messagesRef = ref(database, 'messages');
-    push(messagesRef, {
+    await push(messagesRef, {
       uid: currentUser.uid,
+      username: currentUsername,
       email: currentUser.email,
       text,
       timestamp: serverTimestamp()
