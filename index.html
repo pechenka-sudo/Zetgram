@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Zetgram Red</title>
+<style>
+  /* Reset */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0; background: #2a0d0d; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: #f0dcdc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  #app {
+    width: 420px;
+    height: 620px;
+    box-shadow: 0 0 20px #ff3b3baa;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: linear-gradient(145deg, #5a1c1c, #7e2a2a);
+  }
+  #login, #chat {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    padding: 25px 30px;
+  }
+  #login.active, #chat.active {
+    display: flex;
+  }
+  h2 {
+    margin: 0 0 20px 0;
+    font-weight: 700;
+    color: #ff4949;
+    text-align: center;
+    text-shadow: 0 0 6px #ff2f2f;
+  }
+  input[type="email"], input[type="password"], #messageInput {
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    border: none;
+    border-radius: 25px;
+    background: #330808;
+    box-shadow: 0 0 6px #ff1c1c;
+    font-size: 17px;
+    color: #ffdddd;
+    outline: none;
+    transition: box-shadow 0.3s ease;
+  }
+  input[type="email"]::placeholder,
+  input[type="password"]::placeholder,
+  #messageInput::placeholder {
+    color: #ff9999;
+  }
+  input[type="email"]:focus, input[type="password"]:focus, #messageInput:focus {
+    box-shadow: 0 0 12px #ff4949;
+    background: #440a0a;
+  }
+  button {
+    background: #ff4949;
+    border: none;
+    border-radius: 25px;
+    padding: 14px 22px;
+    font-size: 17px;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 15px;
+    font-weight: 600;
+    user-select: none;
+    text-shadow: 0 0 5px #ff1c1c;
+  }
+  button:hover {
+    background: #cc1f1f;
+  }
+  #loginError {
+    color: #ff8080;
+    min-height: 24px;
+    text-align: center;
+    margin-bottom: 12px;
+    font-weight: 600;
+    text-shadow: 0 0 3px #ff3b3b;
+  }
+  #chat header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #551111;
+  }
+  #chat header h2 {
+    color: #ff3b3b;
+    text-shadow: 0 0 8px #ff0000;
+    margin: 0;
+  }
+  #btnLogout {
+    background: transparent;
+    color: #ff6666;
+    font-size: 22px;
+    padding: 5px 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    border: none;
+    font-weight: 700;
+    text-shadow: 0 0 5px #ff0000;
+  }
+  #btnLogout:hover {
+    background: #551111;
+    color: #ff2222;
+  }
+  #messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 14px;
+    background: #330808;
+    border-radius: 12px;
+    margin: 20px 0;
+    box-shadow: inset 0 0 12px #ff0000cc;
+    scrollbar-width: thin;
+    scrollbar-color: #ff4949 #330808;
+  }
+  #messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  #messages::-webkit-scrollbar-track {
+    background: #330808;
+    border-radius: 10px;
+  }
+  #messages::-webkit-scrollbar-thumb {
+    background-color: #ff4949;
+    border-radius: 10px;
+  }
+  .message {
+    margin-bottom: 14px;
+    padding: 12px 16px;
+    background: #660a0a;
+    border-radius: 22px;
+    max-width: 75%;
+    word-wrap: break-word;
+    font-size: 16px;
+    box-shadow: 0 2px 6px #aa0000aa;
+    user-select: text;
+    transition: background-color 0.3s ease;
+    color: #ffbcbc;
+    font-weight: 600;
+  }
+  .message.self {
+    background: #ff4d4d;
+    margin-left: auto;
+    color: #330000;
+    box-shadow: 0 2px 10px #ff0000cc;
+  }
+  #sendForm {
+    display: flex;
+    gap: 12px;
+  }
+  #messageInput {
+    flex-grow: 1;
+    border-radius: 50px;
+    font-size: 16px;
+    padding: 14px 20px;
+    background: #330808;
+    box-shadow: 0 0 8px #ff4949;
+    color: #ffdddd;
+    outline: none;
+  }
+  #messageInput::placeholder {
+    color: #ff9999;
+  }
+  #btnSend {
+    width: 54px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 26px;
+    line-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #ff3b3b;
+    box-shadow: 0 0 10px #ff0000;
+    transition: background-color 0.3s ease;
+    color: white;
+  }
+  #btnSend:hover {
+    background: #cc1f1f;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Login & Sign Up -->
+  <div id="login" class="active">
+    <h2>Zetgram</h2>
+    <input type="email" id="email" placeholder="Email" autocomplete="username" />
+    <input type="password" id="password" placeholder="Пароль" autocomplete="current-password" />
+    <button id="btnLogin">Войти</button>
+    <button id="btnSignUp">Регистрация</button>
+    <div id="loginError"></div>
+  </div>
+
+  <!-- Chat -->
+  <div id="chat">
+    <header>
+      <h2>Zetgram</h2>
+      <button id="btnLogout" title="Выйти">⏻</button>
+    </header>
+    <div id="messages"></div>
+    <form id="sendForm">
+      <input type="text" id="messageInput" placeholder="Напишите сообщение..." autocomplete="off" />
+      <button type="submit" id="btnSend">➤</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- Реклама справа снизу -->
+<div id="adBanner">
+  <input autocomplete="off" type="checkbox" id="closeAd" hidden />
+  <label for="closeAd">&times;</label>
+  <iframe data-aa="2406373" src="//acceptable.a-ads.com/2406373/?size=Adaptive" frameborder="0"></iframe>
+</div>
+
+<style>
+  #adBanner {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    width: 300px;
+    max-width: 90vw;
+    background: rgba(40, 0, 0, 0.85);
+    border-radius: 10px 10px 0 0;
+    padding: 6px 10px 10px 10px;
+    box-shadow: 0 0 15px #ff2b2bcc;
+    z-index: 99999;
+    user-select: none;
+    font-family: Arial, sans-serif;
+  }
+  #adBanner label {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    cursor: pointer;
+    color: #ff4949;
+    font-weight: bold;
+    font-size: 18px;
+    user-select: none;
+    text-shadow: 0 0 4px #ff0000;
+  }
+  #adBanner iframe {
+    width: 100%;
+    height: 90px;
+    border-radius: 0 0 10px 10px;
+    display: block;
+  }
+  #closeAd:checked + label + iframe {
+    display: none;
+  }
+</style>
+
+<script type="module">
+  // Firebase imports (ES Modules)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import { getDatabase, ref, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+
+  // Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTZrRKHrmKnA9ycBWvt9ephnr7TN6ZFs8",
+    authDomain: "zetgram-d2b77.firebaseapp.com",
+    projectId: "zetgram-d2b77",
+    storageBucket: "zetgram-d2b77.firebasestorage.app",
+    messagingSenderId: "804686454",
+    appId: "1:804686454:web:db9f618955e3d370deed57",
+    measurementId: "G-KCYSRCX4ZL"
+  };
+
+  // Init Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const database = getDatabase(app);
+
+  // Elements
+  const loginDiv = document.getElementById('login');
+  const chatDiv = document.getElementById('chat');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const btnLogin = document.getElementById('btnLogin');
+  const btnSignUp = document.getElementById('btnSignUp');
+  const loginError = document.getElementById('loginError');
+  const messagesDiv = document.getElementById('messages');
+  const sendForm = document.getElementById('sendForm');
+  const messageInput = document.getElementById('messageInput');
+  const btnLogout = document.getElementById('btnLogout');
+
+  let currentUser = null;
+
+  function showLogin() {
+    loginDiv.classList.add('active');
+    chatDiv.classList.remove('active');
+    loginError.textContent = '';
+    emailInput.value = '';
+    passwordInput.value = '';
+  }
+  function showChat() {
+    loginDiv.classList.remove('active');
+    chatDiv.classList.add('active');
+    messagesDiv.innerHTML = '';
+    messageInput.value = '';
+    messageInput.focus();
+  }
+
+  // Listen auth state changes
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      showChat();
+      loadMessages();
+    } else {
+      currentUser = null;
+      showLogin();
+    }
+  });
+
+  // Sign up
+  btnSignUp.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    loginError.textContent = '';
+
+    if (!email || !password) {
+      loginError.textContent = 'Введите email и пароль';
+      return;
+    }
+    createUserWithEmailAndPassword(auth, email, password)
+      .catch((error) => {
+        loginError.textContent = error.message;
+      });
+  });
+
+  // Login
+  btnLogin.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+    loginError.textContent = '';
+
+    if (!email || !password) {
+      loginError.textContent = 'Введите email и пароль';
+      return;
+    }
+    signInWithEmailAndPassword(auth, email, password)
+      .catch((error) => {
+        loginError.textContent = error.message;
+      });
+  });
+
+  // Logout
+  btnLogout.addEventListener('click', () => {
+    signOut(auth);
+  });
+
+  // Load messages from realtime DB and listen for new ones
+  function loadMessages() {
+    const messagesRef = ref(database, 'messages');
+    onChildAdded(messagesRef, (snapshot) => {
+      const msg = snapshot.val();
+      displayMessage(msg);
+    });
+  }
+
+  // Display message in chat
+  function displayMessage(msg) {
+    const msgDiv = document.createElement('div');
+    msgDiv.classList.add('message');
+    if (msg.uid === currentUser.uid) {
+      msgDiv.classList.add('self');
+    }
+    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    msgDiv.textContent = `[${time}] ${msg.email.split('@')[0]}: ${msg.text}`;
+    messagesDiv.appendChild(msgDiv);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  // Send message
+  sendForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    const messagesRef = ref(database, 'messages');
+    push(messagesRef, {
+      uid: currentUser.uid,
+      email: currentUser.email,
+      text,
+      timestamp: serverTimestamp()
+    });
+    messageInput.value = '';
+  });
+</script>
+
+</body>
+</html>
