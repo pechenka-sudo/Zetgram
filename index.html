@@ -91,6 +91,97 @@ textarea{flex:1; resize:none; padding:8px; border-radius:8px; background:transpa
   .panel{min-width:0}
   .ad{right:8px; top:8px; width:150px}
 }
+
+/* Auth modal styles */
+.auth-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(26, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999999;
+  backdrop-filter: blur(8px);
+}
+.auth-modal-content {
+  background: #2a0f0f;
+  border-radius: 12px;
+  padding: 32px 28px 24px;
+  width: 360px;
+  box-shadow:
+    0 0 20px 3px #b30000aa,
+    0 0 40px 10px #ff4c4c88;
+  border: 2px solid #b30000;
+  color: #ffefef;
+  font-family: Inter, 'Segoe UI', Roboto, Arial, sans-serif;
+  user-select: none;
+}
+.auth-title {
+  margin: 0 0 18px;
+  font-weight: 700;
+  font-size: 24px;
+  text-align: center;
+  text-shadow: 0 0 6px #ff4c4ccc;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.auth-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #ff9999cc;
+  margin-bottom: 4px;
+}
+.auth-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #b30000;
+  background: #3a1111;
+  color: #ffefef;
+  font-size: 16px;
+  outline-offset: 2px;
+  outline-color: transparent;
+  transition: outline-color 0.2s ease;
+}
+.auth-input:focus {
+  outline-color: #ff4c4c;
+  background: #4a0a0a;
+}
+.auth-btn {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(90deg, #b30000, #ff4c4c);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 0 8px #ff4c4caa;
+  transition: background 0.3s ease;
+}
+.auth-btn:hover {
+  background: linear-gradient(90deg, #ff4c4c, #b30000);
+}
+.auth-toggle a {
+  color: #ff4c4c;
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.auth-toggle a:hover {
+  text-decoration: underline;
+}
+.auth-error {
+  margin-top: 12px;
+  color: #ff5555;
+  font-weight: 700;
+  text-align: center;
+  min-height: 20px;
+}
 </style>
 </head>
 <body>
@@ -126,6 +217,29 @@ textarea{flex:1; resize:none; padding:8px; border-radius:8px; background:transpa
     <div class="close" id="closeAd">✕</div>
     <!-- AADS iframe -->
     <iframe data-aa="2406373" src="//acceptable.a-ads.com/2406373/?size=Adaptive" referrerpolicy="no-referrer"></iframe>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div id="authModal" class="auth-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authTitle" style="display:none;">
+  <div class="auth-modal-content">
+    <h2 id="authTitle" class="auth-title">Вход в ZetGram</h2>
+    <form id="authForm" autocomplete="off" class="auth-form">
+      <label for="emailInput" class="auth-label">Email</label>
+      <input type="email" id="emailInput" class="auth-input" required autocomplete="username" />
+
+      <label for="passInput" class="auth-label">Пароль</label>
+      <input type="password" id="passInput" class="auth-input" required autocomplete="current-password" />
+
+      <label for="nickInput" id="nicknameLabel" class="auth-label" style="display:none;">Ник (для регистрации)</label>
+      <input type="text" id="nickInput" class="auth-input" style="display:none;" autocomplete="nickname" />
+
+      <button type="submit" class="auth-btn">Войти</button>
+    </form>
+    <div class="auth-toggle" style="margin-top:12px; text-align:center;">
+      <a href="#" id="toggleAuth">Нет аккаунта? Зарегистрироваться</a>
+    </div>
+    <div id="authError" class="auth-error" role="alert" aria-live="assertive"></div>
   </div>
 </div>
 
@@ -188,6 +302,15 @@ textarea{flex:1; resize:none; padding:8px; border-radius:8px; background:transpa
   const headerUser = document.getElementById('headerUser');
   const adBanner = document.getElementById('adBanner');
   const closeAd = document.getElementById('closeAd');
+
+  const authModal = document.getElementById('authModal');
+  const authForm = document.getElementById('authForm');
+  const emailInput = document.getElementById('emailInput');
+  const passInput = document.getElementById('passInput');
+  const nickInput = document.getElementById('nickInput');
+  const nicknameLabel = document.getElementById('nicknameLabel');
+  const toggleAuthLink = document.getElementById('toggleAuth');
+  const authError = document.getElementById('authError');
 
   closeAd.addEventListener('click', ()=> adBanner.style.display='none');
 
@@ -258,222 +381,205 @@ textarea{flex:1; resize:none; padding:8px; border-radius:8px; background:transpa
   });
 
   // ---------- messages ----------
-  const displayedMessages = new Set();
-  function scrollToBottom(){
+  function renderMessage(key, msg, isMine=false){
+    if(!msg) return;
+    const div = el('div','message');
+    if(isMine) div.classList.add('mine');
+    div.dataset.key = key;
+
+    const meta = el('div','meta');
+    const av = el('div','avatar-sm');
+    av.style.background = colorFromString(msg.username||'U');
+    av.textContent = initials(msg.username||'U');
+
+    const author = el('div','author', msg.username || 'Без имени');
+    const timeEl = el('div','time', timeString(msg.timestamp||Date.now()));
+
+    meta.appendChild(av);
+    meta.appendChild(author);
+    meta.appendChild(timeEl);
+
+    div.appendChild(meta);
+
+    if(msg.text){
+      const text = el('div','msg-text');
+      text.textContent = msg.text;
+      div.appendChild(text);
+    }
+    if(msg.image){
+      const img = document.createElement('img');
+      img.className = 'msg-img';
+      img.src = msg.image;
+      img.alt = 'Изображение';
+      div.appendChild(img);
+    }
+
+    // delete button if mine
+    if(isMine){
+      const delBtn = el('button','del-btn','×');
+      delBtn.setAttribute('aria-label','Удалить сообщение');
+      delBtn.addEventListener('click', ()=>{
+        const messageRef = ref(db, 'messages/' + key);
+        remove(messageRef).catch(console.error);
+      });
+      div.appendChild(delBtn);
+    }
+
+    messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
-  // render one message
-  function renderMessage(key, msg){
-    if(displayedMessages.has(key)) return;
-    displayedMessages.add(key);
-
-    const isMine = auth.currentUser && msg.uid === auth.currentUser.uid;
-    const wrapper = el('div','message ' + (isMine ? 'mine':'other'));
-    wrapper.id = 'm-'+key;
-
-    // meta (avatar + author + time)
-    const meta = el('div','meta');
-    const av = el('div','avatar-sm');
-    av.style.background = colorFromString(msg.author || msg.username || msg.uid);
-    av.textContent = initials(msg.author || msg.username || msg.uid);
-    const author = el('div','author', msg.author || msg.username || 'Без имени');
-    const tm = el('div','time', timeString(msg.timestamp||Date.now()));
-    meta.appendChild(av);
-    meta.appendChild(author);
-    meta.appendChild(tm);
-
-    const textNode = el('div','msg-text', msg.text || '');
-
-    wrapper.appendChild(meta);
-    if(msg.text) wrapper.appendChild(textNode);
-
-    // image (if present)
-    if(msg.imageUrl){
-      const img = document.createElement('img');
-      img.src = msg.imageUrl;
-      img.className = 'msg-img';
-      img.alt = 'Изображение';
-      wrapper.appendChild(img);
-      img.addEventListener('load', scrollToBottom);
-    }
-
-    // delete button for own
-    if(isMine){
-      const del = el('button','del-btn','×');
-      del.title = 'Удалить сообщение';
-      del.addEventListener('click', async (ev)=>{
-        ev.stopPropagation();
-        if(!confirm('Удалить сообщение?')) return;
-        try{
-          await remove(ref(db, 'messages/' + key));
-        }catch(e){ alert('Ошибка удаления: '+e.message) }
-      });
-      wrapper.appendChild(del);
-    }
-
-    messagesEl.appendChild(wrapper);
-    scrollToBottom();
-  }
-
-  // subscribe to messages
+  // listen messages
   const messagesRef = ref(db, 'messages');
-  const messagesQuery = query(messagesRef, orderByChild('timestamp'));
-  onChildAdded(messagesQuery, (snap)=>{
-    renderMessage(snap.key, snap.val());
+  onChildAdded(messagesRef, (data) => {
+    const msg = data.val();
+    renderMessage(data.key, msg, msg.uid === auth.currentUser?.uid);
   });
-  // remove handler: when message removed, delete from DOM and set
-  onChildRemoved(messagesRef, (snap)=>{
-    const id = 'm-' + snap.key;
-    const elrem = document.getElementById(id);
-    if(elrem) elrem.remove();
-    displayedMessages.delete(snap.key);
+  onChildRemoved(messagesRef, (data) => {
+    const elToRemove = messagesEl.querySelector(`[data-key="${data.key}"]`);
+    if(elToRemove) elToRemove.remove();
   });
 
-
-  // send message (text + optional image url)
-  async function sendMessage(text, imageUrl=null){
-    if(!auth.currentUser) { alert('Сначала войдите'); return; }
-    const msg = {
-      uid: auth.currentUser.uid,
-      author: auth.currentUser.displayName || (auth.currentUser.email && auth.currentUser.email.split('@')[0]) || 'Без имени',
-      text: text || '',
-      imageUrl: imageUrl || null,
-      timestamp: Date.now()
-    };
-    await push(ref(db, 'messages'), msg);
-  }
-
-  // Upload image to storage and return url
-  async function uploadImage(file){
-    const id = Date.now() + '_' + Math.random().toString(36).slice(2,9);
-    const sRef = storageRef(storage, 'chat_images/' + id + '_' + file.name);
-    const blob = file;
-    await uploadBytes(sRef, blob);
-    return await getDownloadURL(sRef);
-  }
-
-  // ---------- UI events ----------
-  sendBtn.addEventListener('click', async ()=>{
+  // ---------- send message ----------
+  async function sendMessage(){
     const txt = textInput.value.trim();
     if(!txt && !fileInput.files.length) return;
+
     sendBtn.disabled = true;
-    try{
-      if(fileInput.files.length){
-        const url = await uploadImage(fileInput.files[0]);
-        await sendMessage(txt, url);
-      } else {
-        await sendMessage(txt, null);
-      }
-      textInput.value = '';
+
+    let imageUrl = null;
+    if(fileInput.files.length){
+      const file = fileInput.files[0];
+      const storagePath = 'images/' + auth.currentUser.uid + '/' + Date.now() + '_' + file.name;
+      const storageReference = storageRef(storage, storagePath);
+      await uploadBytes(storageReference, file);
+      imageUrl = await getDownloadURL(storageReference);
       fileInput.value = '';
-    }catch(e){
-      alert('Ошибка отправки: '+e.message);
-    } finally { sendBtn.disabled = false; }
+    }
+
+    const msgData = {
+      uid: auth.currentUser.uid,
+      username: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+      text: txt || null,
+      image: imageUrl || null,
+      timestamp: serverTimestamp()
+    };
+    await push(ref(db,'messages'), msgData);
+    textInput.value = '';
+    sendBtn.disabled = false;
+    textInput.focus();
+  }
+
+  sendBtn.addEventListener('click', e => {
+    e.preventDefault();
+    sendMessage();
   });
 
-  // enter key to send
-  textInput.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter' && !e.shiftKey){
+  textInput.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && !e.shiftKey){
       e.preventDefault();
-      sendBtn.click();
+      sendMessage();
     }
   });
 
-  // ---------- Auth UI (simple popup prompt) ----------
-  // We ask user to sign in with email/password or register with nickname
-  // For simplicity: prompt flows (could be replaced with full forms)
-  async function authFlow(){
-    // if already logged in, skip
-    if(auth.currentUser) return;
-
-    // present minimal UI: check stored email in localStorage?
-    const savedEmail = localStorage.getItem('zetgram_email') || '';
-    const use = confirm('Войти в ZetGram? (OK — войти, Отмена — регистрация)');
-    if(use){
-      const email = prompt('Email', savedEmail) || '';
-      const pass = prompt('Пароль') || '';
-      try{
-        await signInWithEmailAndPassword(auth, email, pass);
-        localStorage.setItem('zetgram_email', email);
-        return;
-      }catch(e){
-        alert('Ошибка входа: ' + e.message);
-        // fallback to register
-      }
-    }
-    // register
-    const nickname = prompt('Выберите ник (будет отображаться в чате)') || '';
-    if(!nickname){ alert('Ник обязателен'); return authFlow(); }
-    const emailR = prompt('Email (для входа)') || '';
-    const passR = prompt('Пароль') || '';
-    try{
-      const cred = await createUserWithEmailAndPassword(auth, emailR, passR);
-      // set displayName
-      await updateProfile(cred.user, { displayName: nickname });
-      // write user node
-      await set(ref(db, 'users/' + cred.user.uid), { username: nickname, online:true, lastSeen: Date.now() });
-      localStorage.setItem('zetgram_email', emailR);
-    }catch(e){
-      alert('Ошибка регистрации: ' + e.message);
-      return authFlow();
+  // ---------- presence ----------
+  function updatePresence(online){
+    if(!auth.currentUser) return;
+    const userRef = ref(db, 'users/' + auth.currentUser.uid);
+    if(online){
+      set(userRef, {
+        username: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+        online: true,
+        lastSeen: serverTimestamp()
+      });
+      onDisconnect(userRef).update({online:false, lastSeen: serverTimestamp()});
+    } else {
+      set(userRef, {online:false, lastSeen: serverTimestamp()});
     }
   }
 
-  // presence: set online, and onDisconnect set lastSeen
-  onAuthStateChanged(auth, async (u)=>{
-    if(u){
-      // update header
-      headerUser.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
-        <div style="width:36px;height:36px;border-radius:8px;background:${colorFromString(u.displayName||u.email)};display:flex;align-items:center;justify-content:center;font-weight:700">${initials(u.displayName||u.email)}</div>
-        <div style="display:flex;flex-direction:column;text-align:right"><div style="font-weight:700">${u.displayName||u.email.split('@')[0]}</div><div style="font-size:12px;color:var(--muted)">Вы онлайн</div></div>
-      </div>`;
+  // ---------- auth UI ----------
+  let isRegisterMode = false;
 
-      // set presence in DB
-      const userRef = ref(db, 'users/' + u.uid);
-      await set(userRef, { username: u.displayName || (u.email && u.email.split('@')[0]) || 'Без имени', online: true, lastSeen: Date.now() });
-      // ensure onDisconnect sets offline
-      onDisconnect(userRef).set({ username: u.displayName || (u.email && u.email.split('@')[0]) || 'Без имени', online:false, lastSeen: Date.now() });
+  function showAuthModal(show){
+    authModal.style.display = show ? 'flex' : 'none';
+    authModal.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
 
+  function toggleAuthMode(){
+    isRegisterMode = !isRegisterMode;
+    if(isRegisterMode){
+      authModal.querySelector('.auth-title').textContent = 'Регистрация в ZetGram';
+      authForm.querySelector('button[type=submit]').textContent = 'Зарегистрироваться';
+      nicknameLabel.style.display = 'block';
+      nickInput.style.display = 'block';
+      toggleAuthLink.textContent = 'Уже есть аккаунт? Войти';
+      authError.textContent = '';
     } else {
-      headerUser.innerHTML = `<div style="color:var(--muted)">Не в сети</div>`;
+      authModal.querySelector('.auth-title').textContent = 'Вход в ZetGram';
+      authForm.querySelector('button[type=submit]').textContent = 'Войти';
+      nicknameLabel.style.display = 'none';
+      nickInput.style.display = 'none';
+      toggleAuthLink.textContent = 'Нет аккаунта? Зарегистрироваться';
+      authError.textContent = '';
+    }
+  }
+
+  toggleAuthLink.addEventListener('click', e=>{
+    e.preventDefault();
+    toggleAuthMode();
+  });
+
+  authForm.addEventListener('submit', async e=>{
+    e.preventDefault();
+    authError.textContent = '';
+    const email = emailInput.value.trim();
+    const pass = passInput.value;
+    const nick = nickInput.value.trim();
+
+    try{
+      if(isRegisterMode){
+        // регистрация
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(userCredential.user, {displayName: nick || email.split('@')[0]});
+        // update presence here
+        updatePresence(true);
+        showAuthModal(false);
+      } else {
+        // вход
+        const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+        updatePresence(true);
+        showAuthModal(false);
+      }
+    } catch(err){
+      // показать ошибку в модалке
+      let msg = 'Ошибка входа/регистрации';
+      if(err.code === 'auth/wrong-password') msg = 'Неверный пароль';
+      else if(err.code === 'auth/user-not-found') msg = 'Пользователь не найден';
+      else if(err.code === 'auth/email-already-in-use') msg = 'Email уже используется';
+      else if(err.code === 'auth/invalid-email') msg = 'Некорректный email';
+      else if(err.code === 'auth/weak-password') msg = 'Пароль слишком слабый (минимум 6 символов)';
+      authError.textContent = msg;
     }
   });
 
-  // if not logged in, start flow
-  // do it on load
-  window.addEventListener('load', async ()=>{
-    // small delay to let firebase init
-    setTimeout(async ()=>{
-      if(!auth.currentUser) {
-        await authFlow();
-      }
-    }, 200);
-  });
-
-  // ---------- simple sign-out via header click (double-click) ----------
-  headerUser.addEventListener('dblclick', async ()=>{
-    if(confirm('Выйти из ZetGram?')){
-      if(auth.currentUser){
-        // set offline
-        await set(ref(db, 'users/' + auth.currentUser.uid), { username: auth.currentUser.displayName || (auth.currentUser.email && auth.currentUser.email.split('@')[0]), online:false, lastSeen: Date.now() });
-      }
-      await signOut(auth);
-      location.reload();
+  // ---------- auth state observer ----------
+  onAuthStateChanged(auth, user => {
+    if(user){
+      headerUser.textContent = 'Пользователь: ' + (user.displayName || user.email);
+      showAuthModal(false);
+      updatePresence(true);
+    } else {
+      headerUser.textContent = '';
+      updatePresence(false);
+      showAuthModal(true);
     }
   });
 
+  // Clean presence on tab close
+  window.addEventListener('beforeunload', ()=>{
+    updatePresence(false);
+  });
 </script>
 </body>
-<div class="chat-header">
-    <h1>Zetgram</h1>
-    
-    <div id="frame" style="width: 100%;margin: auto;background: rgba(0, 0, 0, 0.50);position: relative; z-index: 99998;">
-        <iframe data-aa='2406373' src='//acceptable.a-ads.com/2406373/?size=Adaptive&background_color=ddd&title_color=b27&title_hover_color=fffefe'
-            style='border:0; padding:0; width:70%; height:auto; overflow:hidden;display: block;margin: auto'></iframe>
-    </div>
-    
-    <button id="logoutBtn">Выйти</button>
-</div>
-
 </html>
