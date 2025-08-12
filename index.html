@@ -3,12 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Zetgram Red с никами</title>
+<title>Zetgram Red с никами и удалением</title>
 <style>
-  /* Стили остались те же, как в предыдущем примере */
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
   body {
     margin: 0; background: #2a0d0d; font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     color: #f0dcdc;
@@ -33,9 +30,7 @@
     height: 100%;
     padding: 25px 30px;
   }
-  #login.active, #chat.active {
-    display: flex;
-  }
+  #login.active, #chat.active { display: flex; }
   h2 {
     margin: 0 0 20px 0;
     font-weight: 700;
@@ -151,12 +146,30 @@
     transition: background-color 0.3s ease;
     color: #ffbcbc;
     font-weight: 600;
+    position: relative;
   }
   .message.self {
     background: #ff4d4d;
     margin-left: auto;
     color: #330000;
     box-shadow: 0 2px 10px #ff0000cc;
+  }
+  .delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #ffaaaa;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+  .delete-btn:hover {
+    opacity: 1;
+    color: #ff2222;
   }
   #sendForm {
     display: flex;
@@ -268,8 +281,23 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-  import { getDatabase, ref, set, get, push, onChildAdded, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  import {
+    getDatabase,
+    ref,
+    set,
+    get,
+    push,
+    onChildAdded,
+    onChildRemoved,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDTZrRKHrmKnA9ycBWvt9ephnr7TN6ZFs8",
@@ -360,7 +388,6 @@
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const uid = userCredential.user.uid;
       await set(ref(database, 'users/' + uid), { username });
-      // После успешной регистрации подгрузим ник
       currentUsername = username;
     } catch (error) {
       loginError.textContent = error.message;
@@ -386,23 +413,59 @@
     signOut(auth);
   });
 
+  // Для хранения добавленных сообщений, чтобы не дублировать
+  const displayedMessages = new Set();
+
   function loadMessages() {
     const messagesRef = ref(database, 'messages');
+    
+    // Обработка новых сообщений
     onChildAdded(messagesRef, (snapshot) => {
+      const key = snapshot.key;
+      if(displayedMessages.has(key)) return; // уже есть
+      displayedMessages.add(key);
       const msg = snapshot.val();
-      displayMessage(msg);
+      displayMessage(msg, key);
+    });
+    
+    // Обработка удаления сообщений
+    onChildRemoved(messagesRef, (snapshot) => {
+      const key = snapshot.key;
+      displayedMessages.delete(key);
+      const elem = document.getElementById('msg-' + key);
+      if (elem) elem.remove();
     });
   }
 
-  function displayMessage(msg) {
+  function displayMessage(msg, key) {
     const msgDiv = document.createElement('div');
     msgDiv.classList.add('message');
+    msgDiv.id = 'msg-' + key;
+
     if (msg.uid === currentUser.uid) {
       msgDiv.classList.add('self');
+      // Добавляем кнопку удаления
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '×';
+      delBtn.classList.add('delete-btn');
+      delBtn.title = 'Удалить сообщение';
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if(confirm('Удалить это сообщение?')) {
+          const msgRef = ref(database, 'messages/' + key);
+          await set(msgRef, null); // удаление из базы
+        }
+      };
+      msgDiv.appendChild(delBtn);
     }
-    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    const displayName = msg.username || msg.email.split('@')[0] || 'Anon';
-    msgDiv.textContent = `[${time}] ${displayName}: ${msg.text}`;
+
+    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const displayName = msg.username || 'Anon';
+
+    // Текст сообщения без повторения email
+    const textNode = document.createTextNode(`[${time}] ${displayName}: ${msg.text}`);
+    msgDiv.appendChild(textNode);
+
     messagesDiv.appendChild(msgDiv);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
@@ -416,7 +479,6 @@
     await push(messagesRef, {
       uid: currentUser.uid,
       username: currentUsername,
-      email: currentUser.email,
       text,
       timestamp: serverTimestamp()
     });
